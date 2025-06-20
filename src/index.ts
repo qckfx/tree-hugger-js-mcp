@@ -8,7 +8,7 @@ import {
   ListToolsRequestSchema,
   ReadResourceRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
-import { parse, TreeHugger, TreeNode } from "tree-hugger-js";
+import { parse, TreeHugger, NodeWrapper, FunctionInfo, ClassInfo, ImportInfo, NodeInfo, TransformOperation } from "tree-hugger-js";
 import { readFileSync, existsSync } from "fs";
 import { resolve } from "path";
 
@@ -18,25 +18,25 @@ interface ParsedAST {
   sourceCode: string;
   language: string;
   timestamp: Date;
-  functions?: any[];
-  classes?: any[];
-  imports?: any[];
+  functions?: FunctionInfo[];
+  classes?: ClassInfo[];
+  imports?: ImportInfo[];
 }
 
 interface AnalysisResult {
-  functions: any[];
-  classes: any[];
-  imports: any[];
-  exports: any[];
-  variables: any[];
-  comments: any[];
-  jsxComponents?: any[];
+  functions: FunctionInfo[];
+  classes: ClassInfo[];
+  imports: ImportInfo[];
+  exports: NodeInfo[];
+  variables: NodeInfo[];
+  comments: NodeInfo[];
+  jsxComponents?: NodeInfo[];
   timestamp: Date;
 }
 
 interface TransformResult {
   operation: string;
-  parameters: any;
+  parameters: TransformOperation["parameters"];
   preview: string;
   timestamp: Date;
 }
@@ -435,7 +435,7 @@ class TreeHuggerMCPServer {
           return await this.removeUnusedImports(args as { preview?: boolean });
         
         case "transform_code":
-          return await this.transformCode(args as { operations: any[]; preview?: boolean });
+          return await this.transformCode(args as { operations: TransformOperation[]; preview?: boolean });
         
         case "get_node_at_position":
           return await this.getNodeAtPosition(args as { line: number; column: number });
@@ -581,7 +581,7 @@ class TreeHuggerMCPServer {
       const results = this.currentAST.tree.findAll(args.pattern);
       const limitedResults = args.limit ? results.slice(0, args.limit) : results;
       
-      const matches = limitedResults.map(node => ({
+      const matches = limitedResults.map((node: NodeWrapper) => ({
         type: node.type,
         text: node.text.length > 100 ? node.text.slice(0, 100) + '...' : node.text,
         line: node.line,
@@ -628,12 +628,13 @@ class TreeHuggerMCPServer {
         functions = functions.filter(fn => fn.name && fn.name.trim() !== '');
       }
 
-      const functionData = functions.map(fn => ({
-        name: fn.name || 'anonymous',
+      const functionData: FunctionInfo[] = functions.map(fn => ({
+        name: fn.name || null,
         type: fn.type,
-        line: fn.line,
-        column: fn.column,
-        isAsync: fn.text.includes('async'),
+        async: fn.text.includes('async'),
+        parameters: [], // TODO: Extract actual parameters from AST
+        startLine: fn.line,
+        endLine: fn.line, // TODO: Calculate actual end line
         text: fn.text.length > 150 ? fn.text.slice(0, 150) + '...' : fn.text,
       }));
       
@@ -674,31 +675,32 @@ class TreeHuggerMCPServer {
     try {
       const classes = this.currentAST.tree.classes();
       
-      const classData = classes.map(cls => {
-        const data: any = {
-          name: cls.name || 'anonymous',
-          type: cls.type,
-          line: cls.line,
-          column: cls.column,
+      const classData: ClassInfo[] = classes.map(cls => {
+        const data: ClassInfo = {
+          name: cls.name || null,
+          methods: [],
+          properties: [],
+          startLine: cls.line,
+          endLine: cls.line, // TODO: Calculate actual end line
+          text: cls.text.length > 150 ? cls.text.slice(0, 150) + '...' : cls.text,
         };
 
         if (args.includeMethods !== false) {
           const methods = cls.findAll('method');
-          data.methods = methods.map((method: TreeNode) => ({
-            name: method.name || 'anonymous',
-            line: method.line,
-            isStatic: method.text.includes('static'),
-            isAsync: method.text.includes('async'),
+          data.methods = methods.map((method: NodeWrapper): FunctionInfo => ({
+            name: method.name || null,
+            type: method.type,
+            async: method.text.includes('async'),
+            parameters: [], // TODO: Extract actual parameters
+            startLine: method.line,
+            endLine: method.line, // TODO: Calculate actual end line
+            text: method.text.length > 100 ? method.text.slice(0, 100) + '...' : method.text,
           }));
         }
 
         if (args.includeProperties !== false) {
           const properties = cls.findAll('property_definition');
-          data.properties = properties.map((prop: TreeNode) => ({
-            name: prop.name || 'unknown',
-            line: prop.line,
-            isStatic: prop.text.includes('static'),
-          }));
+          data.properties = properties.map((prop: NodeWrapper) => prop.name || 'unknown');
         }
 
         return data;
@@ -903,7 +905,7 @@ class TreeHuggerMCPServer {
     }
   }
 
-  private async transformCode(args: { operations: any[]; preview?: boolean }) {
+  private async transformCode(args: { operations: TransformOperation[]; preview?: boolean }) {
     if (!this.currentAST) {
       return {
         content: [{
@@ -920,19 +922,31 @@ class TreeHuggerMCPServer {
       for (const op of args.operations) {
         switch (op.type) {
           case "rename":
+            if (!op.parameters.oldName || !op.parameters.newName) {
+              throw new Error("Rename operation requires oldName and newName parameters");
+            }
             transformer = transformer.rename(op.parameters.oldName, op.parameters.newName);
             break;
           case "removeUnusedImports":
             transformer = transformer.removeUnusedImports();
             break;
           case "replaceIn":
+            if (!op.parameters.nodeType || !op.parameters.pattern || !op.parameters.replacement) {
+              throw new Error("ReplaceIn operation requires nodeType, pattern, and replacement parameters");
+            }
             transformer = transformer.replaceIn(op.parameters.nodeType, op.parameters.pattern, op.parameters.replacement);
             break;
           case "insertBefore":
-            transformer = transformer.insertBefore(op.parameters.pattern, op.parameters.text);
+            if (!op.parameters.pattern || !op.parameters.text) {
+              throw new Error("InsertBefore operation requires pattern and text parameters");
+            }
+            transformer = transformer.insertBefore(String(op.parameters.pattern), op.parameters.text);
             break;
           case "insertAfter":
-            transformer = transformer.insertAfter(op.parameters.pattern, op.parameters.text);
+            if (!op.parameters.pattern || !op.parameters.text) {
+              throw new Error("InsertAfter operation requires pattern and text parameters");
+            }
+            transformer = transformer.insertAfter(String(op.parameters.pattern), op.parameters.text);
             break;
           default:
             throw new Error(`Unknown operation type: ${op.type}`);
@@ -949,7 +963,7 @@ class TreeHuggerMCPServer {
 
       const transformResult: TransformResult = {
         operation: "transform_code",
-        parameters: { operations: args.operations },
+        parameters: {}, // TransformOperation parameters don't include operations array
         preview: result.slice(0, 500) + (result.length > 500 ? '...' : ''),
         timestamp: new Date(),
       };
@@ -1094,7 +1108,7 @@ class TreeHuggerMCPServer {
 
       const transformResult: TransformResult = {
         operation: "insert_code",
-        parameters: { pattern: args.pattern, code: args.code, position: args.position },
+        parameters: { pattern: args.pattern, text: args.code },
         preview: result.slice(0, 500) + (result.length > 500 ? '...' : ''),
         timestamp: new Date(),
       };
