@@ -1,0 +1,36 @@
+{
+  "name": "tree-hugger-js-mcp",
+  "version": "1.0.0",
+  "description": "MCP server for JavaScript/TypeScript code analysis using tree-hugger-js",
+  "main": "build/index.js",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "start": "node build/index.js",
+    "dev": "tsc --watch",
+    "inspector": "npx @modelcontextprotocol/inspector build/index.js",
+    "test": "node test-mcp.js"
+  },
+  "keywords": [
+    "mcp",
+    "tree-hugger",
+    "ast",
+    "javascript",
+    "typescript",
+    "code-analysis",
+    "parsing"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "tree-hugger-js": "file:../tree-hugger"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
