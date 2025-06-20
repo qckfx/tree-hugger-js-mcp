@@ -31,7 +31,7 @@
   "license": "MIT",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",
-    "tree-hugger-js": "^0.2.3"
+    "tree-hugger-js": "^0.3.0"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",

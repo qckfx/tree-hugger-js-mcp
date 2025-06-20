@@ -618,25 +618,17 @@ class TreeHuggerMCPServer {
     }
 
     try {
-      let functions = this.currentAST.tree.functions();
-      
-      if (args.asyncOnly) {
-        functions = functions.filter(fn => fn.text.includes('async'));
-      }
-      
-      if (args.includeAnonymous === false) {
-        functions = functions.filter(fn => fn.name && fn.name.trim() !== '');
-      }
-
-      const functionData: FunctionInfo[] = functions.map(fn => ({
-        name: fn.name || null,
-        type: fn.type,
-        async: fn.text.includes('async'),
-        parameters: [], // TODO: Extract actual parameters from AST
-        startLine: fn.line,
-        endLine: fn.line, // TODO: Calculate actual end line
-        text: fn.text.length > 150 ? fn.text.slice(0, 150) + '...' : fn.text,
-      }));
+      // Use enhanced library methods for detailed function analysis
+      const functionData: FunctionInfo[] = this.currentAST.tree.getFunctionDetails()
+        .filter(fn => {
+          if (args.asyncOnly && !fn.async) return false;
+          if (args.includeAnonymous === false && !fn.name) return false;
+          return true;
+        })
+        .map(fn => ({
+          ...fn,
+          text: fn.text.length > 150 ? fn.text.slice(0, 150) + '...' : fn.text,
+        }));
       
       this.lastAnalysis = {
         ...this.lastAnalysis,
@@ -673,38 +665,17 @@ class TreeHuggerMCPServer {
     }
 
     try {
-      const classes = this.currentAST.tree.classes();
-      
-      const classData: ClassInfo[] = classes.map(cls => {
-        const data: ClassInfo = {
-          name: cls.name || null,
-          methods: [],
-          properties: [],
-          startLine: cls.line,
-          endLine: cls.line, // TODO: Calculate actual end line
+      // Use enhanced library methods for detailed class analysis
+      const classData: ClassInfo[] = this.currentAST.tree.getClassDetails()
+        .map(cls => ({
+          ...cls,
           text: cls.text.length > 150 ? cls.text.slice(0, 150) + '...' : cls.text,
-        };
-
-        if (args.includeMethods !== false) {
-          const methods = cls.findAll('method');
-          data.methods = methods.map((method: NodeWrapper): FunctionInfo => ({
-            name: method.name || null,
-            type: method.type,
-            async: method.text.includes('async'),
-            parameters: [], // TODO: Extract actual parameters
-            startLine: method.line,
-            endLine: method.line, // TODO: Calculate actual end line
+          methods: args.includeMethods !== false ? cls.methods.map(method => ({
+            ...method,
             text: method.text.length > 100 ? method.text.slice(0, 100) + '...' : method.text,
-          }));
-        }
-
-        if (args.includeProperties !== false) {
-          const properties = cls.findAll('property_definition');
-          data.properties = properties.map((prop: NodeWrapper) => prop.name || 'unknown');
-        }
-
-        return data;
-      });
+          })) : [],
+          properties: args.includeProperties !== false ? cls.properties : [],
+        }));
 
       this.lastAnalysis = {
         ...this.lastAnalysis,
