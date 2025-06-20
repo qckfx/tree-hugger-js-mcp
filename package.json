@@ -1,6 +1,6 @@
 {
   "name": "tree-hugger-js-mcp",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "MCP server for JavaScript/TypeScript code analysis using tree-hugger-js",
   "main": "build/index.js",
   "bin": {
