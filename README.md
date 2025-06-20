@@ -24,23 +24,41 @@ An MCP (Model Context Protocol) server that provides AI agents with powerful Jav
 - Support for async functions, classes, methods
 - TypeScript type import handling
 
-## Installation
+## Installation & Usage
+
+### 🚀 Quick Start (Recommended)
+
+Try immediately with npx - no installation required:
 
 ```bash
+# Use with Claude Code or any MCP client
+npx tree-hugger-js-mcp
+```
+
+### 📦 Global Installation
+
+```bash
+# Install globally for repeated use
+npm install -g tree-hugger-js-mcp
+
+# Then run anywhere
+tree-hugger-js-mcp
+```
+
+### 🔧 Development Setup
+
+```bash
+# Clone and build from source
+git clone https://github.com/qckfx/tree-hugger-js-mcp.git
 cd tree-hugger-js-mcp
 npm install
 npm run build
-```
-
-## Usage
-
-### Running the Server
-
-```bash
 npm start
 ```
 
-### MCP Client Configuration
+## MCP Client Configuration
+
+### Using with Claude Code
 
 Add to your MCP client configuration:
 
@@ -48,6 +66,23 @@ Add to your MCP client configuration:
 {
   "mcpServers": {
     "tree-hugger-js": {
+      "command": "npx",
+      "args": ["tree-hugger-js-mcp"]
+    }
+  }
+}
+```
+
+### Alternative Configurations
+
+```json
+{
+  "mcpServers": {
+    "tree-hugger-js": {
+      // If installed globally
+      "command": "tree-hugger-js-mcp"
+      
+      // Or if built from source
       "command": "node",
       "args": ["/path/to/tree-hugger-js-mcp/build/index.js"]
     }

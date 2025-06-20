@@ -1,0 +1,70 @@
+name: Publish to NPM
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: 'https://registry.npmjs.org'
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Build package
+        run: npm run build
+        
+      - name: Publish to NPM
+        run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          
+      - name: Create GitHub Release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          body: |
+            ## What's Changed
+            
+            See the [CHANGELOG](./CHANGELOG.md) for full details.
+            
+            ## Installation
+            
+            ```bash
+            # Try it immediately with npx
+            npx tree-hugger-js-mcp
+            
+            # Or install globally
+            npm install -g tree-hugger-js-mcp
+            ```
+            
+            ## Usage
+            
+            Use with Claude Code or any MCP-compatible client:
+            
+            ```json
+            {
+              "mcpServers": {
+                "tree-hugger-js": {
+                  "command": "npx",
+                  "args": ["tree-hugger-js-mcp"]
+                }
+              }
+            }
+            ```
+          draft: false
+          prerelease: false

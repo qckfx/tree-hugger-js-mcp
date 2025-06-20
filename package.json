@@ -3,13 +3,17 @@
   "version": "1.0.0",
   "description": "MCP server for JavaScript/TypeScript code analysis using tree-hugger-js",
   "main": "build/index.js",
+  "bin": {
+    "tree-hugger-js-mcp": "build/index.js"
+  },
   "type": "module",
   "scripts": {
     "build": "tsc",
     "start": "node build/index.js",
     "dev": "tsc --watch",
     "inspector": "npx @modelcontextprotocol/inspector build/index.js",
-    "test": "node test-mcp.js"
+    "test": "node test-mcp.js",
+    "prepublishOnly": "npm run build"
   },
   "keywords": [
     "mcp",
@@ -18,13 +22,16 @@
     "javascript",
     "typescript",
     "code-analysis",
-    "parsing"
+    "parsing",
+    "model-context-protocol",
+    "claude",
+    "ai-tools"
   ],
   "author": "",
   "license": "MIT",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",
-    "tree-hugger-js": "file:../tree-hugger"
+    "tree-hugger-js": "^0.2.0"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
@@ -32,5 +39,18 @@
   },
   "engines": {
     "node": ">=18"
-  }
+  },
+  "files": [
+    "build/",
+    "README.md",
+    "package.json"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/qckfx/tree-hugger-js-mcp.git"
+  },
+  "bugs": {
+    "url": "https://github.com/qckfx/tree-hugger-js-mcp/issues"
+  },
+  "homepage": "https://github.com/qckfx/tree-hugger-js-mcp#readme"
 }
