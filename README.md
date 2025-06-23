@@ -2,6 +2,10 @@
 
 An MCP (Model Context Protocol) server that provides AI agents with powerful JavaScript/TypeScript code analysis and transformation capabilities using the tree-hugger-js library.
 
+<a href="https://glama.ai/mcp/servers/@qckfx/tree-hugger-js-mcp">
+  <img width="380" height="200" src="https://glama.ai/mcp/servers/@qckfx/tree-hugger-js-mcp/badge" alt="Tree-Hugger-JS Server MCP server" />
+</a>
+
 ## Features
 
 ### 🔍 Code Analysis
